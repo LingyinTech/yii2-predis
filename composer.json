@@ -1,0 +1,13 @@
+{
+  "name": "lingyin/predis",
+  "description": "这里是价绍",
+  "require": {
+    "yiisoft/yii2": "~2.0.15",
+    "predis/predis": "^1.1"
+  },
+  "autoload": {
+    "psr-4": {
+      "lingyin\\predis\\": "src/"
+    }
+  }
+}
