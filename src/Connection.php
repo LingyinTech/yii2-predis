@@ -8,9 +8,9 @@
 
 namespace lingyin\predis;
 
+use Predis\Client;
 use Yii;
 use yii\base\Component;
-use Predis\Client;
 use yii\helpers\Inflector;
 
 class Connection extends Component
@@ -255,14 +255,46 @@ class Connection extends Component
         );
     }
 
+    /**
+     * Closes the connection when this component is being serialized.
+     * @return array
+     */
+    public function __sleep()
+    {
+        $this->close();
+        return array_keys(get_object_vars($this));
+    }
+
+    /**
+     * Returns a value indicating whether the DB connection is established.
+     * @return bool whether the DB connection is established
+     */
+    public function getIsActive()
+    {
+        return $this->_socket !== false;
+    }
+
     public function open()
     {
         if ($this->_socket !== false) {
             return;
         }
-
+        Yii::debug('Opening redis DB connection: ' . var_export($this->parameters, true), __METHOD__);
         $this->_socket = new Client($this->parameters, $this->options);
         $this->initConnection();
+    }
+
+    /**
+     * Closes the currently active DB connection.
+     * It does nothing if the connection is already closed.
+     */
+    public function close()
+    {
+        if ($this->_socket !== false) {
+            Yii::debug('Closing DB connection: ' . var_export($this->parameters, true), __METHOD__);
+            $this->_socket->disconnect();
+            $this->_socket = false;
+        }
     }
 
     /**
