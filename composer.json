@@ -1,6 +1,6 @@
 {
   "name": "lingyin/predis",
-  "description": "这里是价绍",
+  "description": "yii2整合predis，支持哨兵、集群",
   "require": {
     "yiisoft/yii2": "~2.0.15",
     "predis/predis": "^1.1"
