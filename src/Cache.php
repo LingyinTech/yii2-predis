@@ -29,9 +29,26 @@ class Cache extends \yii\caching\Cache
         $this->redis = Instance::ensure($this->redis, Connection::class);
     }
 
+    public function exists($key)
+    {
+        return (bool) $this->redis->executeCommand('EXISTS', [$this->buildKey($key)]);
+    }
+
     protected function getValue($key)
     {
         return $this->redis->executeCommand('GET', [$key]);
+    }
+
+    protected function getValues($keys)
+    {
+        $response = $this->redis->executeCommand('MGET', $keys);
+        $result = [];
+        $i = 0;
+        foreach ($keys as $key) {
+            $result[$key] = $response[$i++];
+        }
+
+        return $result;
     }
 
     protected function setValue($key, $value, $duration)
@@ -45,9 +62,47 @@ class Cache extends \yii\caching\Cache
         }
     }
 
+    protected function setValues($data, $expire)
+    {
+        $args = [];
+        foreach ($data as $key => $value) {
+            $args[] = $key;
+            $args[] = $value;
+        }
+
+        $failedKeys = [];
+        if ($expire == 0) {
+            $this->redis->executeCommand('MSET', $args);
+        } else {
+            $expire = (int) ($expire * 1000);
+            $this->redis->executeCommand('MULTI');
+            $this->redis->executeCommand('MSET', $args);
+            $index = [];
+            foreach ($data as $key => $value) {
+                $this->redis->executeCommand('PEXPIRE', [$key, $expire]);
+                $index[] = $key;
+            }
+            $result = $this->redis->executeCommand('EXEC');
+            array_shift($result);
+            foreach ($result as $i => $r) {
+                if ($r != 1) {
+                    $failedKeys[] = $index[$i];
+                }
+            }
+        }
+
+        return $failedKeys;
+    }
+
     protected function addValue($key, $value, $duration)
     {
-        // TODO: Implement addValue() method.
+        if ($duration == 0) {
+            return (bool) $this->redis->executeCommand('SET', [$key, $value, 'NX']);
+        } else {
+            $expire = (int) ($duration * 1000);
+
+            return (bool) $this->redis->executeCommand('SET', [$key, $value, 'PX', $expire, 'NX']);
+        }
     }
 
     protected function deleteValue($key)
@@ -57,6 +112,6 @@ class Cache extends \yii\caching\Cache
 
     protected function flushValues()
     {
-        // TODO: Implement flushValues() method.
+        return $this->redis->executeCommand('FLUSHDB');
     }
 }
