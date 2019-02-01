@@ -2,8 +2,11 @@
   "name": "lingyin/predis",
   "description": "yii2整合predis，支持哨兵、集群",
   "require": {
-    "yiisoft/yii2": "~2.0.15",
+    "yiisoft/yii2": "~2.0",
     "predis/predis": "^1.1"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^5.7"
   },
   "autoload": {
     "psr-4": {
